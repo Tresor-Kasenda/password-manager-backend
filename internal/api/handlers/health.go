@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/tresor/password-manager/internal/models"
 	"github.com/tresor/password-manager/internal/repository"
 	"github.com/tresor/password-manager/internal/services"
 )
@@ -49,6 +51,12 @@ func (h *HealthHandler) GetHealthReport(c *gin.Context) {
 func (h *HealthHandler) ScanAllPasswords(c *gin.Context) {
 	userID := c.GetString("user_id")
 
+	masterPassword := c.Query("master_password")
+	if masterPassword == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Master password required"})
+		return
+	}
+
 	vaults, err := h.vaultRepo.GetByUserID(c.Request.Context(), uuid.MustParse(userID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch vaults"})
@@ -58,13 +66,24 @@ func (h *HealthHandler) ScanAllPasswords(c *gin.Context) {
 	var vulnerablePasswords []map[string]interface{}
 
 	for _, vault := range vaults {
-		// In production, decrypt the password properly
-		password := "dummy_password" // Replace with actual decryption
+		plaintext, err := h.cryptoService.DecryptData(
+			vault.EncryptedData,
+			masterPassword,
+			vault.EncryptionSalt,
+			vault.Nonce,
+		)
+		if err != nil {
+			continue
+		}
 
-		// Check breach
+		var data models.DecryptedVaultData
+		if err := json.Unmarshal([]byte(plaintext), &data); err != nil {
+			continue
+		}
+		password := data.Password
+
 		breached, count, _ := h.breachService.CheckBreach(password)
 
-		// Calculate strength
 		strength := h.passwordHealthSvc.CalculateStrength(password, vault.UpdatedAt)
 
 		if breached || strength["score"].(int) < 60 {

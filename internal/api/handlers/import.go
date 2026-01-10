@@ -22,9 +22,8 @@ type ImportHandler struct {
 	vaultRepo     *repository.VaultRepository
 	importService *services.ImportService
 	cryptoService *services.CryptoService
-	// in-memory session store to replace Redis for now
-	sessions   map[string]sessionEntry
-	sessionsMu sync.RWMutex
+	sessions      map[string]sessionEntry
+	sessionsMu    sync.RWMutex
 }
 
 func NewImportHandler(
@@ -111,7 +110,6 @@ func (h *ImportHandler) UploadFile(c *gin.Context) {
 
 	sessionJSON, _ := json.Marshal(sessionData)
 
-	// store session in-memory with TTL
 	h.sessionsMu.Lock()
 	h.sessions[sessionID] = sessionEntry{
 		Data:      sessionJSON,
@@ -149,7 +147,6 @@ func (h *ImportHandler) ConfirmImport(c *gin.Context) {
 		return
 	}
 
-	// Get session from in-memory store
 	h.sessionsMu.RLock()
 	sessionEntry, ok := h.sessions[sessionID]
 	h.sessionsMu.RUnlock()
@@ -172,7 +169,10 @@ func (h *ImportHandler) ConfirmImport(c *gin.Context) {
 
 	validEntriesJSON, _ := json.Marshal(sessionData["valid_entries"])
 	var validEntries []models.ImportEntry
-	json.Unmarshal(validEntriesJSON, &validEntries)
+	err := json.Unmarshal(validEntriesJSON, &validEntries)
+	if err != nil {
+		return
+	}
 
 	imported := 0
 	skipped := 0
@@ -201,7 +201,13 @@ func (h *ImportHandler) ConfirmImport(c *gin.Context) {
 				skipped++
 				continue
 			case "create_new":
-				// Continue to create
+				// Continue to create a new entry
+			default:
+				errors = append(errors, map[string]string{
+					"title": entry.Title,
+					"error": "Unknown merge strategy",
+				})
+				continue
 			}
 		}
 
@@ -249,7 +255,6 @@ func (h *ImportHandler) ConfirmImport(c *gin.Context) {
 		imported++
 	}
 
-	// delete session
 	h.sessionsMu.Lock()
 	delete(h.sessions, sessionID)
 	h.sessionsMu.Unlock()

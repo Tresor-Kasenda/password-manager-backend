@@ -46,6 +46,10 @@ func (h *TwoFAHandler) Enable2FA(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
 		return
 	}
+	if user == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
 
 	if !h.cryptoService.VerifyPassword(req.MasterPassword, user.MasterPasswordHash, user.Salt) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid master password"})
@@ -100,6 +104,10 @@ func (h *TwoFAHandler) VerifyAndEnable(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
 		return
 	}
+	if user == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
 
 	if user.TwoFactorSecret == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "2FA setup not initiated"})
@@ -140,6 +148,10 @@ func (h *TwoFAHandler) Verify2FA(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
 		return
 	}
+	if user == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
 
 	if !user.TwoFactorEnabled || user.TwoFactorSecret == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "2FA not enabled"})
@@ -154,10 +166,10 @@ func (h *TwoFAHandler) Verify2FA(c *gin.Context) {
 
 	for i, code := range user.BackupCodes {
 		if code == req.Token {
-			// Remove used backup code
 			user.BackupCodes = append(user.BackupCodes[:i], user.BackupCodes[i+1:]...)
 			err := h.userRepo.Update(c.Request.Context(), user)
 			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update backup codes"})
 				return
 			}
 
@@ -184,6 +196,10 @@ func (h *TwoFAHandler) Disable2FA(c *gin.Context) {
 	user, err := h.userRepo.GetByID(c.Request.Context(), uuid.MustParse(userID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
+		return
+	}
+	if user == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
 

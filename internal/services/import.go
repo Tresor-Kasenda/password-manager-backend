@@ -44,8 +44,7 @@ func (s *ImportService) parseOnePassword(content string) ([]models.ImportEntry, 
 		return nil, fmt.Errorf("empty import file")
 	}
 
-	// Expected format: Title,Website,Username,Password,Notes,Type,Favorite
-	entries := []models.ImportEntry{}
+	var entries []models.ImportEntry
 
 	for i, record := range records {
 		if i == 0 { // Skip header
@@ -89,8 +88,7 @@ func (s *ImportService) parseLastPass(content string) ([]models.ImportEntry, err
 		return nil, fmt.Errorf("empty import file")
 	}
 
-	// Expected format: url,username,password,extra,name,grouping,fav
-	entries := []models.ImportEntry{}
+	var entries []models.ImportEntry
 
 	for i, record := range records {
 		if i == 0 { // Skip header
@@ -145,7 +143,7 @@ func (s *ImportService) parseBitwarden(content string) ([]models.ImportEntry, er
 		return nil, err
 	}
 
-	entries := []models.ImportEntry{}
+	var entries []models.ImportEntry
 
 	for _, item := range data.Items {
 		if item.Type != 1 { // Type 1 is Login
@@ -189,8 +187,7 @@ func (s *ImportService) parseChrome(content string) ([]models.ImportEntry, error
 		return nil, fmt.Errorf("empty import file")
 	}
 
-	// Expected format: name,url,username,password
-	entries := []models.ImportEntry{}
+	var entries []models.ImportEntry
 
 	for i, record := range records {
 		if i == 0 { // Skip header
@@ -237,7 +234,7 @@ func (s *ImportService) parseKeePass(content string) ([]models.ImportEntry, erro
 		return nil, err
 	}
 
-	entries := []models.ImportEntry{}
+	var entries []models.ImportEntry
 
 	for _, kpEntry := range data.Entries {
 		entry := models.ImportEntry{

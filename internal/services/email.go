@@ -91,3 +91,39 @@ func (s *EmailService) Send2FACode(email, code string) error {
 
 	return d.DialAndSend(m)
 }
+
+func (s *EmailService) SendAccountDeletionEmail(email, token string) error {
+	m := gomail.NewMessage()
+	m.SetHeader("From", s.config.From)
+	m.SetHeader("To", email)
+	m.SetHeader("Subject", "Account Deletion Request")
+
+	deletionURL := fmt.Sprintf("https://yourdomain.com/confirm-deletion?token=%s", token)
+
+	body := fmt.Sprintf(`
+        <html>
+        <body>
+            <h2>Account Deletion Request</h2>
+            <p>We received a request to delete your SecureVault account.</p>
+            <p><strong>Warning:</strong> This action will permanently delete:</p>
+            <ul>
+                <li>All your saved passwords</li>
+                <li>All shared passwords</li>
+                <li>Your account data</li>
+            </ul>
+            <p>If you want to proceed, click the link below:</p>
+            <p><a href="%s">Confirm Account Deletion</a></p>
+            <p>This link will expire in 24 hours.</p>
+            <p>If you didn't request this, please ignore this email and your account will remain active.</p>
+            <br>
+            <p><em>SecureVault Security Team</em></p>
+        </body>
+        </html>
+    `, deletionURL)
+
+	m.SetBody("text/html", body)
+
+	d := gomail.NewDialer(s.config.Host, s.config.Port, s.config.Username, s.config.Password)
+
+	return d.DialAndSend(m)
+}

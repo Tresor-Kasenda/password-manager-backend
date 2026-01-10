@@ -1,0 +1,1 @@
+parmi les application que tu as propose Bitwarden,KeePassXC, Pass, Vaultwarden quels sont leurs faiblesset et propose moi des amelioration a implementer dans mon application 

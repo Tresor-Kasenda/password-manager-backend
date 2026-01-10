@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -57,7 +58,7 @@ func (r *VaultRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.Va
     `
 
 	err := r.db.GetContext(ctx, &vault, query, id)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 

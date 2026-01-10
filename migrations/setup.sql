@@ -9,7 +9,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
-                                     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email VARCHAR(255) UNIQUE NOT NULL,
     master_password_hash VARCHAR(255) NOT NULL,
     salt VARCHAR(255) NOT NULL,
@@ -20,12 +20,12 @@ CREATE TABLE IF NOT EXISTS users (
     backup_codes TEXT[],
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
+);
 
 -- Vaults table
-CREATE TABLE IF NOT EXISTS app.vaults (
+CREATE TABLE IF NOT EXISTS vaults (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES app.users(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     website VARCHAR(500),
     username VARCHAR(255),
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS app.vaults (
 
 -- Shared passwords table
 CREATE TABLE IF NOT EXISTS shared_passwords (
-                                                id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     vault_id UUID REFERENCES vaults(id) ON DELETE CASCADE,
     owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
     recipient_id UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -60,18 +60,18 @@ CREATE TABLE IF NOT EXISTS shared_passwords (
     revoked BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_accessed TIMESTAMP
-    );
+);
 
 -- Audit logs table
 CREATE TABLE IF NOT EXISTS audit_logs (
-                                          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     vault_id UUID REFERENCES vaults(id) ON DELETE CASCADE,
     action VARCHAR(50) NOT NULL,
     ip_address INET,
     user_agent TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
+);
 
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_vaults_user_id ON vaults(user_id);
@@ -113,4 +113,4 @@ VALUES (
            'hashed_password_here',
            'salt_here',
            false
-       ) ON CONFLICT (email) DO NOTHING;
+) ON CONFLICT (email) DO NOTHING;

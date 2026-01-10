@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -39,7 +40,7 @@ func main() {
 	passwordHealthService := services.NewPasswordHealthService()
 	importService := services.NewImportService()
 
-	authHandler := handlers.NewAuthHandler(userRepo, cryptoService, &cfg.JWT)
+	authHandler := handlers.NewAuthHandler(userRepo, cryptoService, emailService, &cfg.JWT)
 	vaultHandler := handlers.NewVaultHandler(vaultRepo, cryptoService)
 	sharingHandler := handlers.NewSharingHandler(shareRepo, vaultRepo, userRepo, cryptoService, emailService)
 	healthHandler := handlers.NewHealthHandler(vaultRepo, cryptoService, passwordHealthService, breachService)
@@ -67,10 +68,9 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	// Start server in goroutine
 	go func() {
 		log.Printf("Server starting on port %s", cfg.Server.Port)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("Failed to start server: %v", err)
 		}
 	}()

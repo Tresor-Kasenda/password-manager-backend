@@ -109,6 +109,10 @@ func (h *VaultHandler) GetVault(c *gin.Context) {
 
 	vault, err := h.vaultRepo.GetByID(c.Request.Context(), uuid.MustParse(vaultID))
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch vault"})
+		return
+	}
+	if vault == nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Vault entry not found"})
 		return
 	}
@@ -163,6 +167,10 @@ func (h *VaultHandler) UpdateVault(c *gin.Context) {
 
 	vault, err := h.vaultRepo.GetByID(c.Request.Context(), uuid.MustParse(vaultID))
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch vault"})
+		return
+	}
+	if vault == nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Vault entry not found"})
 		return
 	}
@@ -211,6 +219,10 @@ func (h *VaultHandler) DeleteVault(c *gin.Context) {
 
 	vault, err := h.vaultRepo.GetByID(c.Request.Context(), uuid.MustParse(vaultID))
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch vault"})
+		return
+	}
+	if vault == nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Vault entry not found"})
 		return
 	}

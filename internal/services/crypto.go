@@ -284,7 +284,6 @@ func (s *CryptoService) CalculatePasswordStrength(password string) map[string]in
 
 	score += varietyCount * 15
 
-	// Normalize score
 	if score < 0 {
 		score = 0
 	}
@@ -292,7 +291,6 @@ func (s *CryptoService) CalculatePasswordStrength(password string) map[string]in
 		score = 100
 	}
 
-	// Determine strength
 	var strength, color string
 	if score >= 80 {
 		strength = "Strong"

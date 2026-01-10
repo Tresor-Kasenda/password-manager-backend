@@ -25,10 +25,9 @@ func (s *PasswordHealthService) GenerateHealthReport(vaults []models.Vault) map[
 	reusedCount := 0
 	oldCount := 0
 
-	details := []map[string]interface{}{}
-	priorityActions := []map[string]interface{}{}
+	var details []map[string]interface{}
+	var priorityActions []map[string]interface{}
 
-	// Simplified analysis (in production, decrypt and analyze properly)
 	for _, vault := range vaults {
 		score := 75 // Dummy score
 		ageDays := int(time.Since(vault.UpdatedAt).Hours() / 24)
@@ -84,10 +83,9 @@ func (s *PasswordHealthService) GenerateHealthReport(vaults []models.Vault) map[
 
 func (s *PasswordHealthService) CalculateStrength(password string, lastChanged time.Time) map[string]interface{} {
 	score := 0
-	issues := []string{}
-	suggestions := []string{}
+	var issues []string
+	var suggestions []string
 
-	// Length check
 	length := len(password)
 	if length < 8 {
 		issues = append(issues, "Password is too short (minimum 8 characters)")
@@ -101,7 +99,6 @@ func (s *PasswordHealthService) CalculateStrength(password string, lastChanged t
 		score += 20
 	}
 
-	// Character variety
 	hasLower := false
 	hasUpper := false
 	hasDigit := false
@@ -146,7 +143,6 @@ func (s *PasswordHealthService) CalculateStrength(password string, lastChanged t
 
 	score += varietyCount * 15
 
-	// Pattern detection
 	if matched, _ := regexp.MatchString(`(.)\1{2,}`, password); matched {
 		issues = append(issues, "Avoid repeated characters")
 		score -= 10
@@ -157,14 +153,12 @@ func (s *PasswordHealthService) CalculateStrength(password string, lastChanged t
 		score -= 10
 	}
 
-	// Entropy calculation
 	entropy := s.calculateEntropy(password)
 	if entropy < 28 {
 		issues = append(issues, "Low entropy")
 		score -= 15
 	}
 
-	// Age check
 	ageDays := int(time.Since(lastChanged).Hours() / 24)
 	if ageDays > 365 {
 		issues = append(issues, "Password is over 1 year old")
@@ -174,7 +168,6 @@ func (s *PasswordHealthService) CalculateStrength(password string, lastChanged t
 		score -= 10
 	}
 
-	// Normalize score
 	if score < 0 {
 		score = 0
 	}
@@ -182,7 +175,6 @@ func (s *PasswordHealthService) CalculateStrength(password string, lastChanged t
 		score = 100
 	}
 
-	// Determine strength
 	var strength, color string
 	if score >= 80 {
 		strength = "Strong"

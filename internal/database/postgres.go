@@ -11,7 +11,6 @@ import (
 )
 
 func NewPostgresDB(cfg *config.DatabaseConfig) (*sqlx.DB, error) {
-	// Build URL-style DSN to avoid issues when password is empty
 	u := &url.URL{
 		Scheme: "postgres",
 		Host:   fmt.Sprintf("%s:%s", cfg.Host, cfg.Port),

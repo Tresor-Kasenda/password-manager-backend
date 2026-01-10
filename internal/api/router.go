@@ -54,6 +54,7 @@ func (r *Router) Setup() *gin.Engine {
 		{
 			auth.POST("/register", r.authHandler.Register)
 			auth.POST("/login", middleware.RateLimitMiddleware(5), r.authHandler.Login)
+			auth.POST("/request-deletion", r.authHandler.RequestAccountDeletion)
 		}
 
 		protected := v1.Group("")

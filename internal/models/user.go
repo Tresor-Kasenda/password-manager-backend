@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 type User struct {
@@ -13,11 +14,11 @@ type User struct {
 	Salt               string    `db:"salt" json:"-"`
 	PublicKey          string    `db:"public_key" json:"public_key,omitempty"`
 	PrivateKey         string    `db:"private_key" json:"-"`
-	TwoFactorEnabled   bool      `db:"two_factor_enabled" json:"two_factor_enabled"`
-	TwoFactorSecret    *string   `db:"two_factor_secret" json:"-"`
-	BackupCodes        []string  `db:"backup_codes" json:"-"`
-	CreatedAt          time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt          time.Time `db:"updated_at" json:"updated_at"`
+	TwoFactorEnabled   bool           `db:"two_factor_enabled" json:"two_factor_enabled"`
+	TwoFactorSecret    *string        `db:"two_factor_secret" json:"-"`
+	BackupCodes        pq.StringArray `db:"backup_codes" json:"-"`
+	CreatedAt          time.Time      `db:"created_at" json:"created_at"`
+	UpdatedAt          time.Time      `db:"updated_at" json:"updated_at"`
 }
 
 type LoginRequest struct {

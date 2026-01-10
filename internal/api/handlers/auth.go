@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"net/http"
 	"time"
 
@@ -16,6 +18,7 @@ import (
 type AuthHandler struct {
 	userRepo      *repository.UserRepository
 	cryptoService *services.CryptoService
+	emailService  *services.EmailService
 	jwtSecret     string
 	jwtExpire     int
 }
@@ -23,11 +26,13 @@ type AuthHandler struct {
 func NewAuthHandler(
 	userRepo *repository.UserRepository,
 	cryptoService *services.CryptoService,
+	emailService *services.EmailService,
 	cfg *config.JWTConfig,
 ) *AuthHandler {
 	return &AuthHandler{
 		userRepo:      userRepo,
 		cryptoService: cryptoService,
+		emailService:  emailService,
 		jwtSecret:     cfg.Secret,
 		jwtExpire:     cfg.ExpireTime,
 	}
@@ -40,7 +45,13 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	existingUser, _ := h.userRepo.GetByEmail(c.Request.Context(), req.Email)
+	existingUser, err := h.userRepo.GetByEmail(c.Request.Context(), req.Email)
+	if err != nil {
+		// Repository returned an unexpected error while checking for existing user
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check existing user"})
+		return
+	}
+
 	if existingUser != nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "User already exists"})
 		return
@@ -66,6 +77,8 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 		return
 	}
+
+	go h.emailService.SendWelcomeEmail(req.Email)
 
 	c.JSON(http.StatusOK, gin.H{"message": "User created successfully"})
 }
@@ -101,6 +114,38 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	})
 }
 
+func (h *AuthHandler) RequestAccountDeletion(c *gin.Context) {
+	var req struct {
+		Email string `json:"email" binding:"required,email"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	user, err := h.userRepo.GetByEmail(c.Request.Context(), req.Email)
+	if err != nil || user == nil {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "If an account exists with this email, a confirmation email has been sent",
+		})
+		return
+	}
+
+	// Generate deletion token
+	token := generateRandomToken(32)
+
+	// TODO: Store deletion token in database or Redis with expiration
+	// For now, we'll just send the email
+
+	// Send confirmation email
+	go h.emailService.SendAccountDeletionEmail(req.Email, token)
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "If an account exists with this email, a confirmation email has been sent",
+	})
+}
+
 func (h *AuthHandler) generateToken(userID string) (string, error) {
 	claims := jwt.MapClaims{
 		"sub": userID,
@@ -110,4 +155,13 @@ func (h *AuthHandler) generateToken(userID string) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(h.jwtSecret))
+}
+
+func generateRandomToken(length int) string {
+	b := make([]byte, length)
+	_, err := rand.Read(b)
+	if err != nil {
+		return ""
+	}
+	return base64.URLEncoding.EncodeToString(b)
 }

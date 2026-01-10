@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"log"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -55,11 +57,14 @@ func (r *UserRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.Use
     `
 
 	err := r.db.GetContext(ctx, &user, query, id)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
+	if err != nil {
+		return nil, err
+	}
 
-	return &user, err
+	return &user, nil
 }
 
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
@@ -74,11 +79,18 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.
     `
 
 	err := r.db.GetContext(ctx, &user, query, email)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
+	if err != nil {
+		// Log the underlying DB error to help debugging (caller will receive the error)
+		// Use the standard log package so it appears in server logs
+		// We avoid logging sensitive fields from `user`.
+		log.Printf("GetByEmail query failed for email=%s: %v", email, err)
+		return nil, err
+	}
 
-	return &user, err
+	return &user, nil
 }
 
 func (r *UserRepository) Update(ctx context.Context, user *models.User) error {
