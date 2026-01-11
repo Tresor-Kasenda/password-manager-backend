@@ -24,15 +24,23 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	db, err := database.NewPostgresDB(&cfg.Database)
+	// Initialize GORM database for migrated repositories
+	gormDB, err := database.NewGormDB(&cfg.Database)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Fatalf("Failed to connect to database with GORM: %v", err)
 	}
-	defer db.Close()
 
-	userRepo := repository.NewUserRepository(db)
-	vaultRepo := repository.NewVaultRepository(db)
-	shareRepo := repository.NewShareRepository(db)
+	// Initialize sqlx database for non-migrated repositories
+	sqlxDB, err := database.NewPostgresDB(&cfg.Database)
+	if err != nil {
+		log.Fatalf("Failed to connect to database with sqlx: %v", err)
+	}
+	defer sqlxDB.Close()
+
+	// All repositories now use GORM
+	userRepo := repository.NewUserRepository(gormDB)
+	vaultRepo := repository.NewVaultRepository(gormDB)
+	shareRepo := repository.NewShareRepository(gormDB)
 
 	cryptoService := services.NewCryptoService()
 	emailService := services.NewEmailService(&cfg.Email)

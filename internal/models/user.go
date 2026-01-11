@@ -8,17 +8,26 @@ import (
 )
 
 type User struct {
-	ID                 uuid.UUID `db:"id" json:"id"`
-	Email              string    `db:"email" json:"email"`
-	MasterPasswordHash string    `db:"master_password_hash" json:"-"`
-	Salt               string    `db:"salt" json:"-"`
-	PublicKey          string    `db:"public_key" json:"public_key,omitempty"`
-	PrivateKey         string    `db:"private_key" json:"-"`
-	TwoFactorEnabled   bool           `db:"two_factor_enabled" json:"two_factor_enabled"`
-	TwoFactorSecret    *string        `db:"two_factor_secret" json:"-"`
-	BackupCodes        pq.StringArray `db:"backup_codes" json:"-"`
-	CreatedAt          time.Time      `db:"created_at" json:"created_at"`
-	UpdatedAt          time.Time      `db:"updated_at" json:"updated_at"`
+	ID                 uuid.UUID      `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	Email              string         `gorm:"uniqueIndex;not null" json:"email"`
+	MasterPasswordHash string         `gorm:"not null" json:"-"`
+	Salt               string         `gorm:"not null" json:"-"`
+	PublicKey          string         `json:"public_key,omitempty"`
+	PrivateKey         string         `json:"-"`
+	TwoFactorEnabled   bool           `gorm:"default:false" json:"two_factor_enabled"`
+	TwoFactorSecret    *string        `json:"-"`
+	BackupCodes        pq.StringArray `gorm:"type:text[]" json:"-"`
+	CreatedAt          time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt          time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+
+	// Relations
+	Vaults            []Vault         `gorm:"foreignKey:UserID" json:"-"`
+	SharedPasswords   []SharedPassword `gorm:"foreignKey:OwnerID" json:"-"`
+}
+
+// TableName specifies the table name for GORM
+func (User) TableName() string {
+	return "users"
 }
 
 type LoginRequest struct {

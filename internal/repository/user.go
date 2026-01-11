@@ -2,90 +2,51 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"log"
 
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
-	"github.com/lib/pq"
 	"github.com/tresor/password-manager/internal/models"
+	"gorm.io/gorm"
 )
 
+// UserRepository handles user data persistence with GORM
 type UserRepository struct {
-	db *sqlx.DB
+	db *gorm.DB
 }
 
-func NewUserRepository(db *sqlx.DB) *UserRepository {
+// NewUserRepository creates a new user repository
+func NewUserRepository(db *gorm.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
+// Create creates a new user in the database
 func (r *UserRepository) Create(ctx context.Context, user *models.User) error {
-	query := `
-        INSERT INTO users (
-            id, email, master_password_hash, salt, 
-            public_key, private_key, two_factor_enabled,
-            created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-    `
-
-	_, err := r.db.ExecContext(
-		ctx, query,
-		user.ID,
-		user.Email,
-		user.MasterPasswordHash,
-		user.Salt,
-		user.PublicKey,
-		user.PrivateKey,
-		user.TwoFactorEnabled,
-		user.CreatedAt,
-		user.UpdatedAt,
-	)
-
-	return err
+	return r.db.WithContext(ctx).Create(user).Error
 }
 
+// GetByID retrieves a user by their ID
 func (r *UserRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
 	var user models.User
-	query := `
-        SELECT id, email, master_password_hash, salt, 
-               public_key, private_key, two_factor_enabled,
-               two_factor_secret, backup_codes,
-               created_at, updated_at
-        FROM users
-        WHERE id = $1
-    `
+	err := r.db.WithContext(ctx).Where("id = ?", id).First(&user).Error
 
-	err := r.db.GetContext(ctx, &user, query, id)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
-	if err != nil {
-		return nil, err
-	}
 
-	return &user, nil
+	return &user, err
 }
 
+// GetByEmail retrieves a user by their email address
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
-	query := `
-        SELECT id, email, master_password_hash, salt, 
-               public_key, private_key, two_factor_enabled,
-               two_factor_secret, backup_codes,
-               created_at, updated_at
-        FROM users
-        WHERE email = $1
-    `
+	err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
 
-	err := r.db.GetContext(ctx, &user, query, email)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
+
 	if err != nil {
-		// Log the underlying DB error to help debugging (caller will receive the error)
-		// Use the standard log package so it appears in server logs
-		// We avoid logging sensitive fields from `user`.
 		log.Printf("GetByEmail query failed for email=%s: %v", email, err)
 		return nil, err
 	}
@@ -93,40 +54,13 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.
 	return &user, nil
 }
 
+// Update updates an existing user in the database
+// GORM automatically updates the UpdatedAt timestamp via the autoUpdateTime tag
 func (r *UserRepository) Update(ctx context.Context, user *models.User) error {
-	query := `
-        UPDATE users
-        SET email = $2,
-            master_password_hash = $3,
-            salt = $4,
-            public_key = $5,
-            private_key = $6,
-            two_factor_enabled = $7,
-            two_factor_secret = $8,
-            backup_codes = $9,
-            updated_at = $10
-        WHERE id = $1
-    `
-
-	_, err := r.db.ExecContext(
-		ctx, query,
-		user.ID,
-		user.Email,
-		user.MasterPasswordHash,
-		user.Salt,
-		user.PublicKey,
-		user.PrivateKey,
-		user.TwoFactorEnabled,
-		user.TwoFactorSecret,
-		pq.Array(user.BackupCodes),
-		user.UpdatedAt,
-	)
-
-	return err
+	return r.db.WithContext(ctx).Save(user).Error
 }
 
+// Delete deletes a user from the database
 func (r *UserRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	query := `DELETE FROM users WHERE id = $1`
-	_, err := r.db.ExecContext(ctx, query, id)
-	return err
+	return r.db.WithContext(ctx).Delete(&models.User{}, id).Error
 }

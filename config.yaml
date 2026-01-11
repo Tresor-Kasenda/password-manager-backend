@@ -1,0 +1,31 @@
+server:
+  port: "8000"
+  mode: "debug"
+
+database:
+  host: "localhost"
+  port: "5432"
+  user: "scott"
+  password: ""
+  dbname: "password_manager"
+  sslmode: "disable"
+
+redis:
+  host: "localhost"
+  port: "6379"
+  password: ""
+  db: 0
+
+jwt:
+  secret: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.KMUFsIDTnFmyG3nMiGM6H9FNFUROf3wh7SmqJp-QV30"
+  expire_time: 24
+
+email:
+  host: "smtp.gmail.com"
+  port: 587
+  username: ""
+  password: ""
+  from: "SecureVault <noreply@securevault.com>"
+
+hibp:
+  api_key: ""

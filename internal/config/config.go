@@ -74,7 +74,12 @@ func Load() (*Config, error) {
 
 	if err := viper.ReadInConfig(); err != nil {
 		log.Printf("Warning: Config file not found, using defaults and environment variables: %v", err)
+	} else {
+		log.Printf("Config file loaded from: %s", viper.ConfigFileUsed())
 	}
+
+	dbNameFromViper := viper.GetString("database.dbname")
+	log.Printf("Debug - Viper database.dbname: [%s]", dbNameFromViper)
 
 	config := &Config{
 		Server: ServerConfig{
@@ -86,7 +91,7 @@ func Load() (*Config, error) {
 			Port:     getEnvOrDefault("DATABASE_PORT", viper.GetString("database.port")),
 			User:     getEnvOrDefault("DATABASE_USER", viper.GetString("database.user")),
 			Password: getEnvOrDefault("DATABASE_PASSWORD", viper.GetString("database.password")),
-			DBName:   getEnvOrDefault("DATABASE_DBNAME", viper.GetString("database.dbname")),
+			DBName:   getEnvOrDefault("DATABASE_DBNAME", dbNameFromViper),
 			SSLMode:  getEnvOrDefault("DATABASE_SSLMODE", viper.GetString("database.sslmode")),
 		},
 		Redis: RedisConfig{

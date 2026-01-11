@@ -7,19 +7,27 @@ import (
 )
 
 type Vault struct {
-	ID             uuid.UUID  `db:"id" json:"id"`
-	UserID         uuid.UUID  `db:"user_id" json:"user_id"`
-	Title          string     `db:"title" json:"title"`
-	Website        *string    `db:"website" json:"website"`
-	Username       *string    `db:"username" json:"username"`
-	EncryptedData  string     `db:"encrypted_data" json:"encrypted_data"`
-	EncryptionSalt string     `db:"encryption_salt" json:"encryption_salt"`
-	Nonce          string     `db:"nonce" json:"nonce"`
-	Folder         *string    `db:"folder" json:"folder"`
-	Favorite       bool       `db:"favorite" json:"favorite"`
-	LastUsed       *time.Time `db:"last_used" json:"last_used"`
-	CreatedAt      time.Time  `db:"created_at" json:"created_at"`
-	UpdatedAt      time.Time  `db:"updated_at" json:"updated_at"`
+	ID             uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	UserID         uuid.UUID  `gorm:"type:uuid;not null;index" json:"user_id"`
+	Title          string     `gorm:"not null" json:"title"`
+	Website        *string    `json:"website,omitempty"`
+	Username       *string    `json:"username,omitempty"`
+	EncryptedData  string     `gorm:"not null" json:"-"`
+	EncryptionSalt string     `gorm:"not null" json:"-"`
+	Nonce          string     `gorm:"not null" json:"-"`
+	Folder         *string    `json:"folder,omitempty"`
+	Favorite       bool       `gorm:"default:false" json:"favorite"`
+	LastUsed       *time.Time `json:"last_used,omitempty"`
+	CreatedAt      time.Time  `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt      time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
+
+	// Relations
+	User User `gorm:"foreignKey:UserID" json:"-"`
+}
+
+// TableName specifies the table name for GORM
+func (Vault) TableName() string {
+	return "vaults"
 }
 
 type CreateVaultRequest struct {
