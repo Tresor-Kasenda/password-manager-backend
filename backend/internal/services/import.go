@@ -35,6 +35,8 @@ func (s *ImportService) ParseImportFile(content, source string) ([]models.Import
 
 func (s *ImportService) parseOnePassword(content string) ([]models.ImportEntry, error) {
 	reader := csv.NewReader(strings.NewReader(content))
+	reader.FieldsPerRecord = -1
+	reader.LazyQuotes = true
 	records, err := reader.ReadAll()
 	if err != nil {
 		return nil, err
@@ -79,6 +81,8 @@ func (s *ImportService) parseOnePassword(content string) ([]models.ImportEntry, 
 
 func (s *ImportService) parseLastPass(content string) ([]models.ImportEntry, error) {
 	reader := csv.NewReader(strings.NewReader(content))
+	reader.FieldsPerRecord = -1
+	reader.LazyQuotes = true
 	records, err := reader.ReadAll()
 	if err != nil {
 		return nil, err
@@ -178,6 +182,8 @@ func (s *ImportService) parseBitwarden(content string) ([]models.ImportEntry, er
 
 func (s *ImportService) parseChrome(content string) ([]models.ImportEntry, error) {
 	reader := csv.NewReader(strings.NewReader(content))
+	reader.FieldsPerRecord = -1
+	reader.LazyQuotes = true
 	records, err := reader.ReadAll()
 	if err != nil {
 		return nil, err

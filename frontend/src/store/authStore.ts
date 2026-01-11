@@ -1,15 +1,37 @@
-import { create } from 'zustand'
+import { reactive, toRefs } from 'vue'
 
 interface AuthState {
   isAuthenticated: boolean
   user: any | null
-  login: (userData: any) => void
-  logout: () => void
+  token: string | null
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  isAuthenticated: false,
-  user: null,
-  login: (userData) => set({ isAuthenticated: true, user: userData }),
-  logout: () => set({ isAuthenticated: false, user: null }),
-}))
+const state = reactive<AuthState>({
+  isAuthenticated: !!localStorage.getItem('token'),
+  user: JSON.parse(localStorage.getItem('user') || 'null'),
+  token: localStorage.getItem('token'),
+})
+
+export const useAuthStore = () => {
+  const login = (userData: any, token: string) => {
+    state.isAuthenticated = true
+    state.user = userData
+    state.token = token
+    localStorage.setItem('token', token)
+    localStorage.setItem('user', JSON.stringify(userData))
+  }
+
+  const logout = () => {
+    state.isAuthenticated = false
+    state.user = null
+    state.token = null
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+  }
+
+  return {
+    ...toRefs(state),
+    login,
+    logout,
+  }
+}
